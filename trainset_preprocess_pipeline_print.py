@@ -32,7 +32,7 @@ class PreProcess:
     def __init__(self, sr, exp_dir):
         self.slicer = Slicer(
             sr=sr,
-            threshold=-42,
+            threshold=-30,
             min_length=1500,
             min_interval=400,
             hop_size=15,
