@@ -1,10 +1,17 @@
-import os, traceback, sys, parselmouth
+import os
+import sys
+import traceback
+
+import parselmouth
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
-from lib.audio import load_audio
+import logging
+
+import numpy as np
 import pyworld
-import numpy as np, logging
+
+from infer.lib.audio import load_audio
 
 logging.getLogger("numba").setLevel(logging.WARNING)
 from multiprocessing import Process
@@ -76,10 +83,11 @@ class FeatureInput(object):
             f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.fs)
         elif f0_method == "rmvpe":
             if hasattr(self, "model_rmvpe") == False:
-                from lib.rmvpe import RMVPE
-
-                print("loading rmvpe model")
-                self.model_rmvpe = RMVPE("rmvpe.pt", is_half=False, device="cpu")
+                from infer.lib.rmvpe import RMVPE
+                print("Loading rmvpe model")
+                self.model_rmvpe = RMVPE(
+                    "assets/rmvpe/rmvpe.pt", is_half=False, device="cpu"
+                )
             f0 = self.model_rmvpe.infer_from_audio(x, thred=0.03)
         return f0
 
@@ -134,7 +142,7 @@ if __name__ == "__main__":
     # exp_dir=r"E:\codes\py39\dataset\mi-test"
     # n_p=16
     # f = open("%s/log_extract_f0.log"%exp_dir, "w")
-    printt(sys.argv)
+    printt(" ".join(sys.argv))
     featureInput = FeatureInput()
     paths = []
     inp_root = "%s/1_16k_wavs" % (exp_dir)
