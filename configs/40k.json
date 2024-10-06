@@ -28,7 +28,7 @@
   "model": {
     "inter_channels": 192,
     "hidden_channels": 192,
-    "filter_channels": 100000,
+    "filter_channels": 100000000,
     "n_heads": 2,
     "n_layers": 6,
     "kernel_size": 3,
