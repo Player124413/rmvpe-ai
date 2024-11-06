@@ -18,15 +18,7 @@ def compute_f0(self, path, f0_method):
             
             f0 = self.model_rmvpe.infer_from_audio(x, thred=0.03)
             
-            # Validate and pad if necessary
-            if temp_f0 is not None and len(temp_f0) > 0:
-                if len(temp_f0) < p_len:
-                    temp_f0 = np.pad(temp_f0, (0, p_len - len(temp_f0)), mode='constant')
-                elif len(temp_f0) > p_len:
-                    temp_f0 = temp_f0[:p_len]
-                f0 = temp_f0
-            
-            # Additional processing for rmvpe+
+            # Additional processing for rmvpe
             if f0_method == "rmvpe" and np.any(f0 != 0):
                 # 1. Remove outliers
                 mean_f0 = np.mean(f0[f0 > 0])
