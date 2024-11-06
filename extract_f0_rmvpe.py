@@ -43,22 +43,15 @@ class FeatureInput(object):
         p_len = x.shape[0] // self.hop
 
         if f0_method == "rmvpe":
-            if not hasattr(self, "model_rmvpe"):
-                from lib.rmvpe import RMVPE
-                print("Loading RMVPE model")
-                # Initialize RMVPE model
-                self.model_rmvpe = RMVPE("rmvpe.pt", is_half=True, device="cuda")
-            f0 = self.model_rmvpe.infer_from_audio(x, thred=0.03)
-        elif f0_method == "rmvpe+":
-            # RMVPE+ method with additional processing
-            f0 = self.compute_f0_rmvpe_plus(x)
+            # RMVPE method with additional processing
+            f0 = self.compute_f0_rmvpe(x)
         else:
             raise ValueError(f"Unsupported F0 extraction method: {f0_method}")
 
         return f0
 
-    def compute_f0_rmvpe_plus(self, audio):
-        """Enhanced F0 extraction using RMVPE+ with additional processing."""
+    def compute_f0_rmvpe(self, audio):
+        """Enhanced F0 extraction using RMVPE with additional processing."""
         if not hasattr(self, "model_rmvpe"):
             from lib.rmvpe import RMVPE
             print("Loading RMVPE model")
@@ -140,6 +133,6 @@ if __name__ == "__main__":
 
     try:
         # Execute the F0 extraction
-        featureInput.go(paths[i_part::n_part], "rmvpe+")
+        featureInput.go(paths[i_part::n_part], "rmvpe")
     except Exception as e:
         printt(f"f0_all_fail-{traceback.format_exc()}")
