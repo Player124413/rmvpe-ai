@@ -10,16 +10,14 @@ def compute_f0(self, path, f0_method):
     
     try:
         # Base F0 extraction
-        if f0_method in "rmvpe":
+        if f0_method == "rmvpe" and np.any(f0!= 0):
             if not hasattr(self, "model_rmvpe"):
                 from lib.rmvpe import RMVPE
                 printt("Loading RMVPE model")
-                self.model_rmvpe = RMVPE("rmvpe.pt", is_half=False, device="cpu")
-            
-            f0 = self.model_rmvpe.infer_from_audio(x, thred=0.03)
-            
+                self.model_rmvpe = RMVPE("rmvpe.pt", is_half=False, device="cpu"
+          
             # Additional processing for rmvpe
-            if f0_method == "rmvpe" and np.any(f0 != 0):
+            
                 # 1. Remove outliers
                 mean_f0 = np.mean(f0[f0 > 0])
                 std_f0 = np.std(f0[f0 > 0])
@@ -44,6 +42,7 @@ def compute_f0(self, path, f0_method):
                 
                 # 4. Frequency constraints
                 f0 = np.clip(f0, self.f0_min, self.f0_max)
+                f0 = self.model_rmvpe.infer_from_audio(x, thred=0.03)
 
         elif f0_method == "harvest":
             _f0, t = pyworld.harvest(
