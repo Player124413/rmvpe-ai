@@ -1,32 +1,23 @@
 import os, sys
-from tqdm import tqdm
-
-now_dir = os.getcwd()
-sys.path.append(os.path.join(now_dir))
-
-from lib.train.utils import EpochRecorder  # Import the EpochRecorder class #vara2
-
-hps = utils.get_hparams()
-os.environ["CUDA_VISIBLE_DEVICES"] = hps.gpus.replace("-", ",")
-n_gpus = len(hps.gpus.split("-"))
-
-import os
-import sys
-import datetime
-from random import shuffle, randint
-import torch
 
 now_dir = os.getcwd()
 sys.path.append(os.path.join(now_dir))
 
 from lib.train import utils
-from lib.train.data_utils import (
-    TextAudioLoaderMultiNSFsid,
-    TextAudioLoader,
-    TextAudioCollateMultiNSFsid,
-    TextAudioCollate,
-    DistributedBucketSampler,
-)
+import datetime
+
+hps = utils.get_hparams()
+os.environ["CUDA_VISIBLE_DEVICES"] = hps.gpus.replace("-", ",")
+n_gpus = len(hps.gpus.split("-"))
+from random import shuffle, randint
+
+import torch
+
+torch.backends.cudnn.deterministic = False
+torch.backends.cudnn.benchmark = False
+from torch.nn import functional as F
+from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 import torch.multiprocessing as mp
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
@@ -34,6 +25,12 @@ from torch.cuda.amp import autocast, GradScaler
 from lib.infer_pack import commons
 from time import sleep
 from time import time as ttime
+from lib.train.data_utils import (
+    TextAudioLoaderMultiNSFsid,
+    TextAudioLoader,
+    TextAudioCollateMultiNSFsid,
+    TextAudioCollate,
+    DistributedBucketSampler,
 )
 
 if hps.version == "v1":
@@ -53,6 +50,7 @@ from lib.train.mel_processing import mel_spectrogram_torch, spec_to_mel_torch
 from lib.train.process_ckpt import savee
 
 global_step = 0
+
 
 class EpochRecorder:
     def __init__(self):
@@ -94,21 +92,20 @@ def main():
     for i in range(n_gpus):
         children[i].join()
 
+
 def run(rank, n_gpus, hps):
     global global_step
     if rank == 0:
-        logger = utils.get_logger(hps.model_dir, rank)  # Modify this line
+        logger = utils.get_logger(hps.model_dir)
         logger.info(hps)
+        # utils.check_git_hash(hps.model_dir)
         writer = SummaryWriter(log_dir=hps.model_dir)
         writer_eval = SummaryWriter(log_dir=os.path.join(hps.model_dir, "eval"))
-        # Создаем экземпляр EpochRecorder для записи времени и эпохи в лог
-        epoch_recorder = EpochRecorder()
 
     dist.init_process_group(
         backend="gloo", init_method="env://", world_size=n_gpus, rank=rank
     )
-    torch.manual_seed
-
+    torch.manual_seed(hps.train.seed)
     if torch.cuda.is_available():
         torch.cuda.set_device(rank)
 
@@ -119,12 +116,14 @@ def run(rank, n_gpus, hps):
     train_sampler = DistributedBucketSampler(
         train_dataset,
         hps.train.batch_size * n_gpus,
+        # [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1200,1400],  # 16s
         [100, 200, 300, 400, 500, 600, 700, 800, 900],  # 16s
         num_replicas=n_gpus,
         rank=rank,
         shuffle=True,
     )
-
+    # It is possible that dataloader's workers are out of shared memory. Please try to raise your shared memory limit.
+    # num_workers=8 -> num_workers=4
     if hps.if_f0 == 1:
         collate_fn = TextAudioCollateMultiNSFsid()
     else:
@@ -139,7 +138,6 @@ def run(rank, n_gpus, hps):
         persistent_workers=True,
         prefetch_factor=8,
     )
-
     if hps.if_f0 == 1:
         net_g = RVC_Model_f0(
             hps.data.filter_length // 2 + 1,
@@ -172,7 +170,8 @@ def run(rank, n_gpus, hps):
         betas=hps.train.betas,
         eps=hps.train.eps,
     )
-
+    # net_g = DDP(net_g, device_ids=[rank], find_unused_parameters=True)
+    # net_d = DDP(net_d, device_ids=[rank], find_unused_parameters=True)
     if torch.cuda.is_available():
         net_g = DDP(net_g, device_ids=[rank])
         net_d = DDP(net_d, device_ids=[rank])
@@ -180,17 +179,21 @@ def run(rank, n_gpus, hps):
         net_g = DDP(net_g)
         net_d = DDP(net_d)
 
-    try:
+    try:  # 如果能加载自动resume
         _, _, _, epoch_str = utils.load_checkpoint(
             utils.latest_checkpoint_path(hps.model_dir, "D_*.pth"), net_d, optim_d
-        )
+        )  # D多半加载没事
         if rank == 0:
             logger.info("loaded D")
+        # _, _, _, epoch_str = utils.load_checkpoint(utils.latest_checkpoint_path(hps.model_dir, "G_*.pth"), net_g, optim_g,load_opt=0)
         _, _, _, epoch_str = utils.load_checkpoint(
             utils.latest_checkpoint_path(hps.model_dir, "G_*.pth"), net_g, optim_g
         )
         global_step = (epoch_str - 1) * len(train_loader)
-    except:
+        # epoch_str = 1
+        # global_step = 0
+    except:  # 如果首次不能加载，加载pretrain
+        # traceback.print_exc()
         epoch_str = 1
         global_step = 0
         if hps.pretrainG != "":
@@ -200,7 +203,7 @@ def run(rank, n_gpus, hps):
                 net_g.module.load_state_dict(
                     torch.load(hps.pretrainG, map_location="cpu")["model"]
                 )
-            )
+            )  ##测试不加载优化器
         if hps.pretrainD != "":
             if rank == 0:
                 logger.info("loaded pretrained %s" % (hps.pretrainD))
@@ -220,17 +223,7 @@ def run(rank, n_gpus, hps):
     scaler = GradScaler(enabled=hps.train.fp16_run)
 
     cache = []
-for epoch in range(epoch_str, hps.train.epochs + 1):
-    if rank == 0:
-        train_loader = tqdm(train_loader)  # Оборачиваем DataLoader в tqdm для создания прогресс-бара
-
-    for batch_idx, info in enumerate(train_loader):
-        # Ваш код обучения здесь
-
-        if rank == 0:
-            # Обновляем прогресс-бар после каждой итерации
-            train_loader.set_description(f'Epoch {epoch}')
-        
+    for epoch in range(epoch_str, hps.train.epochs + 1):
         if rank == 0:
             train_and_evaluate(
                 rank,
@@ -245,27 +238,22 @@ for epoch in range(epoch_str, hps.train.epochs + 1):
                 [writer, writer_eval],
                 cache,
             )
-    else:
-        train_and_evaluate(
-            rank,
-            epoch,
-            hps,
-            [net_g, net_d],
-            [optim_g, optim_d],
-            [scheduler_g, scheduler_d],
-            scaler,
-            [train_loader, None],
-            None,
-            None,
-            cache,
-        )
-    
-    # Вывод текущей эпохи
-    print(f"Эпоха {epoch} завершена")
-    time.sleep(1)  # Для предотвращения слишком быстрого вывода
-
-    scheduler_g.step()
-    scheduler_d.step()
+        else:
+            train_and_evaluate(
+                rank,
+                epoch,
+                hps,
+                [net_g, net_d],
+                [optim_g, optim_d],
+                [scheduler_g, scheduler_d],
+                scaler,
+                [train_loader, None],
+                None,
+                None,
+                cache,
+            )
+        scheduler_g.step()
+        scheduler_d.step()
 
 
 def train_and_evaluate(
