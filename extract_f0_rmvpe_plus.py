@@ -1,8 +1,6 @@
 import os
 import sys
 import traceback
-now_dir = os.getcwd()
-sys.path.append(now_dir)
 from lib.audio import load_audio
 import pyworld
 import numpy as np
