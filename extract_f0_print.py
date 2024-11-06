@@ -1,3 +1,46 @@
+import os
+import sys
+import traceback
+
+import parselmouth
+
+now_dir = os.getcwd()
+sys.path.append(now_dir)
+import logging
+
+import numpy as np
+import pyworld
+
+from infer.lib.audio import load_audio
+
+logging.getLogger("numba").setLevel(logging.WARNING)
+from multiprocessing import Process
+
+exp_dir = sys.argv[1]
+f = open("%s/extract_f0_feature.log" % exp_dir, "a+")
+
+
+def printt(strr):
+    print(strr)
+    f.write("%s\n" % strr)
+    f.flush()
+
+
+n_p = int(sys.argv[2])
+f0method = sys.argv[3]
+
+
+class FeatureInput(object):
+    def __init__(self, samplerate=16000, hop_size=160):
+        self.fs = samplerate
+        self.hop = hop_size
+
+        self.f0_bin = 256
+        self.f0_max = 1100.0
+        self.f0_min = 50.0
+        self.f0_mel_min = 1127 * np.log(1 + self.f0_min / 700)
+        self.f0_mel_max = 1127 * np.log(1 + self.f0_max / 700) 
+                                        
 def compute_f0(self, path, f0_method):
     """
     Enhanced F0 computation with failsafe mechanisms
