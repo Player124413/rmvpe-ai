@@ -14,8 +14,8 @@ def compute_f0(self, path, f0_method):
             if not hasattr(self, "model_rmvpe"):
                 from lib.rmvpe import RMVPE
                 printt("Loading RMVPE model")
-                self.model_rmvpe = RMVPE("rmvpe.pt", is_half=False, device="cpu"
-          
+                self.model_rmvpe = RMVPE("rmvpe.pt", is_half=False, device="cpu")
+                                         
             # Additional processing for rmvpe
             
                 # 1. Remove outliers
