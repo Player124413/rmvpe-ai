@@ -60,7 +60,7 @@ def load_checkpoint_d(checkpoint_path, combd, sbd, optimizer=None, load_opt=1):
         optimizer.load_state_dict(checkpoint_dict["optimizer"])
     #   except:
     #     traceback.print_exc()
-    logger.info("Loaded checkpoint '{}' (epoch {})".format(checkpoint_path, iteration))
+    print("Loaded checkpoint '{}' (epoch {})".format(checkpoint_path, iteration))
     return model, optimizer, learning_rate, iteration
 
 
@@ -90,7 +90,7 @@ def load_checkpoint_d(checkpoint_path, combd, sbd, optimizer=None, load_opt=1):
 #     model.module.load_state_dict(new_state_dict)
 #   else:
 #     model.load_state_dict(new_state_dict)
-#   logger.info("Loaded checkpoint '{}' (epoch {})" .format(
+#   print("Loaded checkpoint '{}' (epoch {})" .format(
 #     checkpoint_path, iteration))
 #   return model, optimizer, learning_rate, iteration
 def load_checkpoint(checkpoint_path, model, optimizer=None, load_opt=1):
@@ -120,7 +120,7 @@ def load_checkpoint(checkpoint_path, model, optimizer=None, load_opt=1):
         model.module.load_state_dict(new_state_dict, strict=False)
     else:
         model.load_state_dict(new_state_dict, strict=False)
-    logger.info("Loaded model weights")
+    print("Loaded model weights")
 
     iteration = checkpoint_dict["iteration"]
     learning_rate = checkpoint_dict["learning_rate"]
@@ -136,7 +136,7 @@ def load_checkpoint(checkpoint_path, model, optimizer=None, load_opt=1):
 
 
 def save_checkpoint(model, optimizer, learning_rate, iteration, checkpoint_path):
-    logger.info(
+    print(
         "Saving model and optimizer state at epoch {} to {}".format(
             iteration, checkpoint_path
         )
@@ -157,7 +157,7 @@ def save_checkpoint(model, optimizer, learning_rate, iteration, checkpoint_path)
 
 
 def save_checkpoint_d(combd, sbd, optimizer, learning_rate, iteration, checkpoint_path):
-    logger.info(
+    print(
         "Saving model and optimizer state at epoch {} to {}".format(
             iteration, checkpoint_path
         )
