@@ -34,10 +34,9 @@ def printt(strr):
     f.flush()
 
 
-model_path = "assets/hubert"  # Local directory containing model files
-config_path = os.path.join(model_path, "config.json")  # Path to config.json
-model_file_path = os.path.join(model_path, "pytorch_model.bin")  # Path to pytorch_model.bin
-preprocessor_config_path = os.path.join(model_path, "preprocessor_config.json")
+config_path = os.path.join("config.json")  # Path to config.json
+model_file_path = os.path.join("pytorch_model.bin")  # Path to pytorch_model.bin
+preprocessor_config_path = os.path.join("preprocessor_config.json")
 wavPath = f"{exp_dir}/1_16k_wavs"
 outPath = (
     f"{exp_dir}/3_feature256"
@@ -69,8 +68,8 @@ if not os.path.exists(config_path) or not os.path.exists(model_file_path):
     exit(0)
 
 # Load the HuBERT model and feature extractor from Transformers
-config = HubertConfig.from_pretrained(model_path)
-feature_extractor = Wav2Vec2FeatureExtractor.from_pretrained(model_path)
+config = HubertConfig.from_pretrained
+feature_extractor = Wav2Vec2FeatureExtractor.from_pretrained
 # Determine which model to load based on the configuration
 if "HubertModelWithFinalProj" in config.architectures:
     class HubertModelWithFinalProj(HubertModel):
@@ -81,9 +80,9 @@ if "HubertModelWithFinalProj" in config.architectures:
         # Following https://github.com/auspicious3000/contentvec/issues/6
         # Remove this layer is necessary to achieve the desired outcome.
             self.final_proj = nn.Linear(config.hidden_size, config.classifier_proj_size)
-    model = HubertModelWithFinalProj.from_pretrained(model_path)
+    model = HubertModelWithFinalProj.from_pretrained
 else:
-    model = HubertModel.from_pretrained(model_path)
+    model = HubertModel.from_pretrained
 model = model.to(device)
 
 if is_half and device not in ["mps", "cpu"]:
