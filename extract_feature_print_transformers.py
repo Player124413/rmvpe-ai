@@ -18,7 +18,8 @@ import torch
 import torch.nn.functional as F
 import soundfile as sf
 import numpy as np
-from fairseq import checkpoint_utils
+import transformers
+from transformers import HubertModel
 
 device = "cpu"
 if torch.cuda.is_available():
@@ -36,7 +37,9 @@ def printt(strr):
 
 
 printt(sys.argv)
-model_path = "hubert_base.pt"
+model_path = "assets/hubert"  # Local directory containing model files
+config_path = os.path.join(model_path, "config.json")  # Path to config.json
+model_file_path = os.path.join(model_path, "pytorch_model.bin")  # Path to pytorch_model.bin
 
 printt(exp_dir)
 wavPath = "%s/1_16k_wavs" % exp_dir
@@ -62,22 +65,13 @@ def readwave(wav_path, normalize=False):
 
 
 # HuBERT model
-printt("load model(s) from {}".format(model_path))
-# if hubert model is exist
-if os.access(model_path, os.F_OK) == False:
-    printt(
-        "Error: Extracting is shut down because %s does not exist, you may download it from https://huggingface.co/lj1995/VoiceConversionWebUI/tree/main"
-        % model_path
-    )
-    exit(0)
-models, saved_cfg, task = checkpoint_utils.load_model_ensemble_and_task(
-    [model_path],
-    suffix="",
-)
-model = models[0]
+class HubertModelWithFinalProj(HubertModel):
+    def __init__(self, config):
+        super().__init__(config)
+        self.final_proj = nn.Linear(config.hidden_size, config.classifier_proj_size)
+model = HubertModelWithFinalProj.from_pretrained(model_path)
 model = model.to(device)
-printt("move model to %s" % device)
-if device not in ["mps", "cpu"]:
+if is_half and device not in ["mps", "cpu"]:
     model = model.half()
 model.eval()
 
