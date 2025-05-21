@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import transformers
-from transformers import HubertModel, HubertConfig, Wav2Vec2FeatureExtractor
+from transformers import HubertModel
 
 n_part = int(sys.argv[1])
 i_part = int(sys.argv[2])
@@ -34,9 +34,9 @@ def printt(strr):
     f.flush()
 
 
-config_path = os.path.join("config.json")  # Path to config.json
-model_file_path = os.path.join("pytorch_model.bin")  # Path to pytorch_model.bin
-preprocessor_config_path = os.path.join("preprocessor_config.json")
+model_path = "assets/hubert"  # Local directory containing model files
+config_path = os.path.join(model_path, "config.json")  # Path to config.json
+model_file_path = os.path.join(model_path, "pytorch_model.bin")  # Path to pytorch_model.bin
 wavPath = f"{exp_dir}/1_16k_wavs"
 outPath = (
     f"{exp_dir}/3_feature256"
@@ -60,31 +60,12 @@ def readwave(wav_path, normalize=False):
     return feats
 
 
-if not os.path.exists(config_path) or not os.path.exists(model_file_path):
-    printt(
-        f"Error: Model files not found in {model_path}. "
-        "Please ensure the directory contains 'config.json' and 'pytorch_model.bin'."
-    )
-    exit(0)
-
-# Load the HuBERT model and feature extractor from Transformers
-config = HubertConfig.from_pretrained
-feature_extractor = Wav2Vec2FeatureExtractor.from_pretrained
-# Determine which model to load based on the configuration
-if "HubertModelWithFinalProj" in config.architectures:
-    class HubertModelWithFinalProj(HubertModel):
-        def __init__(self, config):
-            super().__init__(config)
-
-        # The final projection layer is only used for backward compatibility.
-        # Following https://github.com/auspicious3000/contentvec/issues/6
-        # Remove this layer is necessary to achieve the desired outcome.
-            self.final_proj = nn.Linear(config.hidden_size, config.classifier_proj_size)
-    model = HubertModelWithFinalProj.from_pretrained
-else:
-    model = HubertModel.from_pretrained
+class HubertModelWithFinalProj(HubertModel):
+    def __init__(self, config):
+        super().__init__(config)
+        self.final_proj = nn.Linear(config.hidden_size, config.classifier_proj_size)
+model = HubertModelWithFinalProj.from_pretrained(model_path)
 model = model.to(device)
-
 if is_half and device not in ["mps", "cpu"]:
     model = model.half()
 model.eval()
@@ -114,21 +95,26 @@ else:
                     continue
 
                 feats = readwave(wav_path, normalize=False)  # Normalize input
-                inputs = feature_extractor(
-                    feats.squeeze(0).numpy(),
-                    sampling_rate=16000,
-                    return_tensors="pt",
-                ).to(device)
-
-                if is_half and device not in ["mps", "cpu"]:
-                    inputs["input_values"] = inputs["input_values"].half()
-
+                padding_mask = torch.BoolTensor(feats.shape).fill_(False)
+                inputs = {
+                    "input_values": (
+                        feats.half().to(device)
+                        if is_half and device not in ["mps", "cpu"]
+                        else feats.to(device)
+                    ),
+                    "attention_mask": padding_mask.to(device),
+                    "output_hidden_states": True
+                }
                 with torch.no_grad():
-                    outputs = model(**inputs, output_hidden_states=True)
+                    outputs = model(**inputs)
                     if version == "v1":
-                        feats = outputs.hidden_states[9]  # Use the 9th layer for v1
+                        # Для v1 берём 9-й слой и применяем final_proj
+                        hidden_states = outputs.hidden_states[9]
+                        feats = model.final_proj(hidden_states)
                     else:
-                        feats = outputs.last_hidden_state  # Use the last layer for others
+                        # Для других версий берём 12-й слой
+                        hidden_states = outputs.hidden_states[12]
+                        feats = hidden_states
 
                 feats = feats.squeeze(0).float().cpu().numpy()
                 if np.isnan(feats).sum() == 0:
