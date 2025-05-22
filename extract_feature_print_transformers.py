@@ -96,7 +96,7 @@ else:
                 inputs = {
                     "input_values": (
                         feats.half().to(device)
-                        if is_half and device not in ["mps", "cpu"]
+                        if device not in ["mps", "cpu"]
                         else feats.to(device)
                     ),
                     "attention_mask": padding_mask.to(device),
