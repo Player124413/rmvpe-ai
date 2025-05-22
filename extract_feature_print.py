@@ -19,7 +19,7 @@ import torch.nn.functional as F
 import soundfile as sf
 import numpy as np
 from fairseq import checkpoint_utils
-
+from fairseq.data.dictionary import Dictionary
 device = "cpu"
 if torch.cuda.is_available():
     device = "cuda"
@@ -70,6 +70,7 @@ if os.access(model_path, os.F_OK) == False:
         % model_path
     )
     exit(0)
+torch.serialization.add_safe_globals([Dictionary])   
 models, saved_cfg, task = checkpoint_utils.load_model_ensemble_and_task(
     [model_path],
     suffix="",
