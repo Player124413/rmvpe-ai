@@ -101,6 +101,7 @@ else:
                     ),
                     "attention_mask": padding_mask.to(device),
                     "output_hidden_states": True
+                }    
                 with torch.no_grad():
                     outputs = model(**inputs)
                     if version == "v1":
