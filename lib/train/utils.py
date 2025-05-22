@@ -9,7 +9,7 @@ import numpy as np
 from scipy.io.wavfile import read
 import torch
 MATPLOTLIB_FLAG = False
-logger.setLevel(logging.ERROR)
+logging.disable(logging.CRITICAL)
 logger = logging
 
 
