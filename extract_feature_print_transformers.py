@@ -15,6 +15,7 @@ else:
     os.environ["CUDA_VISIBLE_DEVICES"] = str(i_gpu)
     version = sys.argv[6]
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 import soundfile as sf
 import numpy as np
