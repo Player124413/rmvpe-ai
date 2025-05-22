@@ -94,12 +94,13 @@ else:
                 feats = readwave(wav_path, normalize=False)
                 padding_mask = torch.BoolTensor(feats.shape).fill_(False)
                 inputs = {
-                    "source": feats.half().to(device)
-                    if device not in ["mps", "cpu"]
-                    else feats.to(device),
-                    "padding_mask": padding_mask.to(device),
-                    "output_layer": 9 if version == "v1" else 12,  # layer 9
-                }
+                    "input_values": (
+                        feats.half().to(device)
+                        if is_half and device not in ["mps", "cpu"]
+                        else feats.to(device)
+                    ),
+                    "attention_mask": padding_mask.to(device),
+                    "output_hidden_states": True
                 with torch.no_grad():
                     outputs = model(**inputs)
                     if version == "v1":
