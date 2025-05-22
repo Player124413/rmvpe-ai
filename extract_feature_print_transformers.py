@@ -91,7 +91,7 @@ else:
                 if os.path.exists(out_path):
                     continue
 
-                feats = readwave(wav_path, normalize=saved_cfg.task.normalize)
+                feats = readwave(wav_path, normalize=False)
                 padding_mask = torch.BoolTensor(feats.shape).fill_(False)
                 inputs = {
                     "source": feats.half().to(device)
