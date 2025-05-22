@@ -7,7 +7,7 @@ from torch.nn.utils.parametrizations import weight_norm
 from torch.nn.utils import remove_weight_norm
 from torch.utils.checkpoint import checkpoint
 
-from infer.lib.infer_pack.commons import init_weights, get_padding
+from lib.infer_pack.commons import init_weights, get_padding
 
 
 class ResBlock(nn.Module):
