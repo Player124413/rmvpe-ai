@@ -37,7 +37,7 @@ def printt(strr):
 
 
 printt(sys.argv)
-model_path = ""  # Local directory containing model files
+model_path = "Hubert"  # Local directory containing model files
 config_path = os.path.join(model_path, "config.json")  # Path to config.json
 model_file_path = os.path.join(model_path, "pytorch_model.bin")  # Path to pytorch_model.bin
 
