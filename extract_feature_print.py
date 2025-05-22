@@ -36,7 +36,7 @@ def printt(strr):
 
 
 printt(sys.argv)
-model_path = "/Hubert/hubert_base.pt"
+model_path = "Hubert/hubert_base.pt"
 
 printt(exp_dir)
 wavPath = "%s/1_16k_wavs" % exp_dir
