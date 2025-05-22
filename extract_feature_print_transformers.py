@@ -72,7 +72,7 @@ class HubertModelWithFinalProj(HubertModel):
         self.final_proj = nn.Linear(config.hidden_size, config.classifier_proj_size)
 model = HubertModelWithFinalProj.from_pretrained(model_path)
 model = model.to(device)
-if is_half and device not in ["mps", "cpu"]:
+if device not in ["mps", "cpu"]:
     model = model.half()
 model.eval()
 
