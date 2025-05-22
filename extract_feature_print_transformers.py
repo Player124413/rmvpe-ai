@@ -101,10 +101,15 @@ else:
                     "output_layer": 9 if version == "v1" else 12,  # layer 9
                 }
                 with torch.no_grad():
-                    logits = model.extract_features(**inputs)
-                    feats = (
-                        model.final_proj(logits[0]) if version == "v1" else logits[0]
-                    )
+                    outputs = model(**inputs)
+                    if version == "v1":
+                        # Для v1 берём 9-й слой и применяем final_proj
+                        hidden_states = outputs.hidden_states[9]
+                        feats = model.final_proj(hidden_states)
+                    else:
+                        # Для других версий берём 12-й слой
+                        hidden_states = outputs.hidden_states[12]
+                        feats = hidden_states
 
                 feats = feats.squeeze(0).float().cpu().numpy()
                 if np.isnan(feats).sum() == 0:
