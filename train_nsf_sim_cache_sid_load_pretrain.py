@@ -145,6 +145,7 @@ def run(rank, n_gpus, hps):
             **hps.model,
             is_half=hps.train.fp16_run,
             sr=hps.sample_rate,
+            vocoder="HiFi-GAN",
         )
     else:
         net_g = RVC_Model_nof0(
