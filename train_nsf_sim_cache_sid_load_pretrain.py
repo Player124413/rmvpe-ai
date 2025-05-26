@@ -33,11 +33,11 @@ from lib.train.data_utils import (
     DistributedBucketSampler,
 )
 
-if hps.version == "v1":
-    from lib.infer_pack.models import (
-        SynthesizerTrnMs256NSFsid as RVC_Model_f0,
-        SynthesizerTrnMs256NSFsid_nono as RVC_Model_nof0,
-        MultiPeriodDiscriminator,
+if hps.vocoder == "RefineGAN":
+    from lib.infer_pack.models_refinegan import (
+        SynthesizerTrnMs768NSFsid as RVC_Model_f0,
+        SynthesizerTrnMs768NSFsid_nono as RVC_Model_nof0,
+        MultiPeriodDiscriminatorV2 as MultiPeriodDiscriminator,
     )
 else:
     from lib.infer_pack.models import (
