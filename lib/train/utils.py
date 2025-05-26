@@ -334,7 +334,7 @@ def get_hparams(init=True):
         "-v", "--version", type=str, required=True, help="model version"
     )
     parser.add_argument(
-        "-voc", "--vocoder", type=str, required=True, help="vocoder"
+        "-voc", "--vocoder", type=str, default="Hifi-GAN"
     )
     parser.add_argument(
         "-f0",
