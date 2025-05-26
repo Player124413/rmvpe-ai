@@ -588,7 +588,7 @@ def train_and_evaluate(
             "saving final ckpt:%s"
             % (
                 savee(
-                    ckpt, hps.sample_rate, hps.if_f0, hps.name, epoch, hps.version, hps
+                    ckpt, hps.sample_rate, hps.if_f0, hps.name, epoch, hps.version, hps, vocoder="HiFi-GAN"
                 )
             )
         )
