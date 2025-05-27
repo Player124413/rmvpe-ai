@@ -39,7 +39,7 @@ if hps.vocoder == "RefineGAN":
         SynthesizerTrnMs768NSFsid_nono as RVC_Model_nof0,
         MultiPeriodDiscriminatorV2 as MultiPeriodDiscriminator,
     )
-else:
+if hps.vocoder == "Hifi-GAN":
     from lib.infer_pack.models import (
         SynthesizerTrnMs768NSFsid as RVC_Model_f0,
         SynthesizerTrnMs768NSFsid_nono as RVC_Model_nof0,
