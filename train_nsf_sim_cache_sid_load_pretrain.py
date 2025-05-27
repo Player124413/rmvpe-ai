@@ -145,7 +145,7 @@ def run(rank, n_gpus, hps):
             **hps.model,
             is_half=hps.train.fp16_run,
             sr=hps.sample_rate,
-            vocoder="HiFi-GAN",
+            vocoder=hps.vocoder,
         )
     else:
         net_g = RVC_Model_nof0(
@@ -588,7 +588,7 @@ def train_and_evaluate(
             "saving final ckpt:%s"
             % (
                 savee(
-                    ckpt, hps.sample_rate, hps.if_f0, hps.name, epoch, hps.version, hps, vocoder
+                    ckpt, hps.sample_rate, hps.if_f0, hps.name, epoch, hps.version, hps, hps.vocoder
                 )
             )
         )
