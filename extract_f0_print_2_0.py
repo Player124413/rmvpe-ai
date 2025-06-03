@@ -4,16 +4,22 @@ import sys
 import parselmouth
 import numpy as np
 import logging
-from multiprocessing import Process
-from typing import List, Tuple, Optional
+import multiprocessing
+from multiprocessing import set_start_method
+from typing import List, Tuple
 from lib.audio import load_audio
 import pyworld
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
+
+# Set spawn method for multiprocessing to work with CUDA
+try:
+    set_start_method('spawn', force=True)
+except RuntimeError:
+    pass
 
 logging.getLogger("numba").setLevel(logging.WARNING)
 logging.basicConfig(level=logging.INFO)
@@ -70,11 +76,18 @@ class FeatureInput:
         # Initialize models lazily when needed
         self.model_rmvpe = None
         self.rnn_smoother = None
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.device = None
+
+    def _initialize_device(self):
+        """Initialize device in each process separately"""
+        if self.device is None:
+            self.device = "cuda" if torch.cuda.is_available() else "cpu"
+            printt(f"Using device: {self.device}")
 
     def _load_rmvpe_model(self):
         """Lazy load RMVPE model"""
         if self.model_rmvpe is None:
+            self._initialize_device()
             from lib.rmvpe import RMVPE
             printt("Loading RMVPE model...")
             self.model_rmvpe = RMVPE("rmvpe.pt", is_half=False, device=self.device)
@@ -82,17 +95,20 @@ class FeatureInput:
     def _load_rnn_smoother(self):
         """Lazy load RNN smoother"""
         if self.rnn_smoother is None:
+            self._initialize_device()
             printt("Initializing RNN smoother...")
             self.rnn_smoother = RNNSmoother().to(self.device)
             # Load pretrained weights if available
             smoother_path = os.path.join(now_dir, "rnn_smoother.pt")
             if os.path.exists(smoother_path):
-                self.rnn_smoother.load_state_dict(torch.load(smoother_path))
+                self.rnn_smoother.load_state_dict(torch.load(smoother_path, map_location=self.device))
             self.rnn_smoother.eval()
 
     def noise_reduction(self, f0: np.ndarray) -> np.ndarray:
         """Simple noise reduction for F0 contour"""
-        # Median filtering
+        if len(f0) == 0:
+            return f0
+            
         window_size = 5
         if len(f0) > window_size:
             padded = np.pad(f0, (window_size//2, window_size//2), mode='edge')
@@ -105,15 +121,15 @@ class FeatureInput:
 
     def volume_normalization(self, audio: np.ndarray) -> np.ndarray:
         """Normalize audio volume"""
+        if len(audio) == 0:
+            return audio
+            
         rms = np.sqrt(np.mean(audio**2))
-        if rms > 0:
-            return audio * (0.1 / rms)  # Target RMS of 0.1
-        return audio
+        return audio * (0.1 / rms) if rms > 0 else audio
 
     def compute_f0_rmvpe_plus(self, x: np.ndarray) -> np.ndarray:
         """Enhanced RMVPE+ F0 extraction with post-processing"""
         self._load_rmvpe_model()
-        self._load_rnn_smoother()
         
         # Volume normalization
         x = self.volume_normalization(x)
@@ -121,20 +137,27 @@ class FeatureInput:
         # Get base F0 from RMVPE
         f0 = self.model_rmvpe.infer_from_audio(x, thred=0.03)
         
-        # Convert to tensor for RNN processing
-        f0_tensor = torch.from_numpy(f0.astype(np.float32)).to(self.device)
-        
-        # RNN smoothing
-        with torch.no_grad():
-            f0_smoothed = self.rnn_smoother(f0_tensor).cpu().numpy()
+        # Skip RNN smoothing if no valid F0 values
+        if np.all(f0 <= 0):
+            return f0
+            
+        # Only load RNN smoother if needed
+        if np.any(f0 > 0):
+            self._load_rnn_smoother()
+            # Convert to tensor for RNN processing
+            f0_tensor = torch.from_numpy(f0.astype(np.float32)).to(self.device)
+            
+            # RNN smoothing
+            with torch.no_grad():
+                f0_smoothed = self.rnn_smoother(f0_tensor).cpu().numpy()
+        else:
+            f0_smoothed = f0
         
         # Noise reduction
         f0_processed = self.noise_reduction(f0_smoothed)
         
         # Remove potential NaN values
-        f0_processed = np.nan_to_num(f0_processed, nan=0.0)
-        
-        return f0_processed
+        return np.nan_to_num(f0_processed, nan=0.0)
 
     def compute_f0(self, path: str, f0_method: str) -> np.ndarray:
         """Compute F0 using specified method"""
@@ -179,7 +202,7 @@ class FeatureInput:
         if f0 is None:
             raise RuntimeError(f"F0 extraction failed for {path}")
         
-        return f0
+        return f0[:p_len]  # Ensure correct length
 
     def coarse_f0(self, f0: np.ndarray) -> np.ndarray:
         """Convert F0 to coarse representation"""
@@ -235,10 +258,11 @@ class FeatureInput:
                 printt(f"Progress: {idx + 1}/{len(paths)}")
 
 
-if __name__ == "__main__":
+def main():
     printt(f"Starting F0 extraction with arguments: {sys.argv}")
     
     try:
+        # Initialize feature input in main process
         featureInput = FeatureInput()
         
         # Prepare paths
@@ -261,10 +285,18 @@ if __name__ == "__main__":
         
         # Process in parallel
         ps = []
+        chunk_size = len(paths) // n_p
         for i in range(n_p):
-            p = Process(
+            start = i * chunk_size
+            end = (i + 1) * chunk_size if i < n_p - 1 else len(paths)
+            chunk = paths[start:end]
+            
+            if not chunk:
+                continue
+                
+            p = multiprocessing.Process(
                 target=featureInput.go,
-                args=(paths[i::n_p], f0method),
+                args=(chunk, f0method),
             )
             ps.append(p)
             p.start()
@@ -280,3 +312,7 @@ if __name__ == "__main__":
         
     finally:
         f.close()
+
+
+if __name__ == "__main__":
+    main()
