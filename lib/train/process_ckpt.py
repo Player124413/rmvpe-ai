@@ -41,8 +41,7 @@ def savee(ckpt, sr, if_f0, name, epoch, version, hps, vocoder, sex):
         opt["f0"] = if_f0
         opt["version"] = version
         opt["vocoder"] = vocoder
-        if sex in (155.0, 255.0):  # 155.0 - Мужская модель | 255.0 - Женская модель
-           opt["sex"] = sex
+        opt["sex"] = sex
         torch.save(opt, "weights/%s.pth" % name)
         return "Success."
     except:
