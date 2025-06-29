@@ -8,7 +8,7 @@ from i18n import I18nAuto
 i18n = I18nAuto()
 
 
-def savee(ckpt, sr, if_f0, name, epoch, version, hps, vocoder, sex):
+def savee(ckpt, sr, if_f0, name, epoch, version, hps, vocoder):
     try:
         opt = OrderedDict()
         opt["weight"] = {}
@@ -41,7 +41,7 @@ def savee(ckpt, sr, if_f0, name, epoch, version, hps, vocoder, sex):
         opt["f0"] = if_f0
         opt["version"] = version
         opt["vocoder"] = vocoder
-        opt["sex"] = sex
+        
         torch.save(opt, "weights/%s.pth" % name)
         return "Success."
     except:
@@ -184,7 +184,7 @@ def extract_small_model(path, name, sr, if_f0, info, version, vocoder):
         opt["info"] = info
         opt["version"] = version
         opt["vocoder"] = vocoder
-        opt["sex"] = sex
+        
         opt["sr"] = sr
         opt["f0"] = int(if_f0)
         torch.save(opt, "weights/%s.pth" % name)
@@ -205,7 +205,7 @@ def change_info(path, info, name):
         return traceback.format_exc()
 
 
-def merge(path1, path2, alpha1, sr, f0, info, name, version, vocoder, sex):
+def merge(path1, path2, alpha1, sr, f0, info, name, version, vocoder):
     try:
 
         def extract(ckpt):
@@ -257,7 +257,7 @@ def merge(path1, path2, alpha1, sr, f0, info, name, version, vocoder, sex):
         opt["f0"] = 1 if f0 == i18n("是") else 0
         opt["version"] = version
         opt["vocoder"] = vocoder
-        opt["sex"] = sex
+        
         opt["info"] = info
         torch.save(opt, "weights/%s.pth" % name)
         return "Success."
