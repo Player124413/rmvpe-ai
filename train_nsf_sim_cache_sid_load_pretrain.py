@@ -45,7 +45,7 @@ if hps.vocoder == "Hifi-GAN":
         SynthesizerTrnMs768NSFsid_nono as RVC_Model_nof0,
         MultiPeriodDiscriminatorV2 as MultiPeriodDiscriminator,
     )
-if hps.sex in (155.0, 255.0):  # 155.0 - Мужская модель | 255.0 - Женская модель
+
 from lib.train.losses import generator_loss, discriminator_loss, feature_loss, kl_loss
 from lib.train.mel_processing import mel_spectrogram_torch, spec_to_mel_torch
 from lib.train.process_ckpt import savee
