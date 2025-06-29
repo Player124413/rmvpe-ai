@@ -573,6 +573,7 @@ def train_and_evaluate(
                         hps,
                         vocoder=hps.vocoder,
                         hps.sex
+                        
                     ),
                 )
             )
