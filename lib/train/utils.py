@@ -336,6 +336,7 @@ def get_hparams(init=True):
     parser.add_argument(
         "-voc", "--vocoder", type=str, default="Hifi-GAN"
     )
+    parser.add_argument("-s", "--sex", type=float, default=0.0)
     parser.add_argument(
         "-f0",
         "--if_f0",
@@ -389,6 +390,7 @@ def get_hparams(init=True):
     hparams.pretrainD = args.pretrainD
     hparams.version = args.version
     hparams.vocoder = args.vocoder
+    hparams.sex = args.sex
     hparams.gpus = args.gpus
     hparams.train.batch_size = args.batch_size
     hparams.sample_rate = args.sample_rate
