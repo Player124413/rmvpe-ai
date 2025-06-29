@@ -8,7 +8,7 @@ from i18n import I18nAuto
 i18n = I18nAuto()
 
 
-def savee(ckpt, sr, if_f0, name, epoch, version, hps, vocoder):
+def savee(ckpt, sr, if_f0, name, epoch, version, hps, vocoder, gender):
     try:
         opt = OrderedDict()
         opt["weight"] = {}
