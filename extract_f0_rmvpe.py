@@ -50,7 +50,7 @@ class FeatureInput(object):
 
                 print("loading rmvpe model")
                 self.model_rmvpe = RMVPE("rmvpe.pt", is_half=False, device="cuda")
-            f0 = self.model_rmvpe.infer_from_audio_modified(x, thred=0.02)
+            f0 = self.model_rmvpe.infer_from_audio(x, thred=0.02)
         return f0
 
     def coarse_f0(self, f0):
