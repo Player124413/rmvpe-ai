@@ -4,7 +4,7 @@ numpy==1.23.5
 scipy==1.9.3
 librosa==0.9.1
 llvmlite==0.39.0
-git+https://github.com/Player124413/fairseq
+fairseq==0.12.2
 faiss-cpu==1.7.3
 Cython
 av
