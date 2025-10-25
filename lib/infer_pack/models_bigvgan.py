@@ -10,7 +10,7 @@ from lib.infer_pack.commons import init_weights, get_padding
 from torch.nn import Conv1d, ConvTranspose1d, AvgPool1d, Conv2d
 from torch.nn.utils import weight_norm, remove_weight_norm, spectral_norm
 from lib.infer_pack import refinegan
-from lib.infer_pack.refinegan import RefineGANGenerator
+from lib.infer_pack.bigvgan import BigVGANGenerator
 from lib.infer_pack.commons import init_weights
 import numpy as np
 from lib.infer_pack import commons
