@@ -700,12 +700,17 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
             kernel_size,
             p_dropout,
         )
-        self.dec = RefineGANGenerator(
-            sample_rate=sr,
-            downsample_rates=upsample_rates[::-1],
+        self.dec = BigVGANGenerator(
+            in_channel=inter_channels,
+            upsample_initial_channel=upsample_initial_channel,
             upsample_rates=upsample_rates,
-            start_channels=16,
-            num_mels=inter_channels,
+            upsample_kernel_sizes=upsample_kernel_sizes,
+            resblock_kernel_sizes=resblock_kernel_sizes,
+            resblock_dilations=resblock_dilation_sizes,
+            gin_channels=gin_channels,
+            sample_rate=sr,
+            harmonic_num=8,  # Добавлен недостающий параметр
+            checkpointing=checkpointing,
         )
         self.enc_q = PosteriorEncoder(
             spec_channels,
