@@ -79,7 +79,7 @@ def main():
         print("NO GPU DETECTED: falling back to CPU - this may take a while")
         n_gpus = 1
     os.environ["MASTER_ADDR"] = "localhost"
-    os.environ["MASTER_PORT"] = "29500"
+    os.environ["MASTER_PORT"] = str(randint(20000, 55555))
     children = []
     for i in range(n_gpus):
         subproc = mp.Process(
@@ -106,9 +106,11 @@ def run(rank, n_gpus, hps):
         writer = SummaryWriter(log_dir=hps.model_dir)
         writer_eval = SummaryWriter(log_dir=os.path.join(hps.model_dir, "eval"))
 
-    dist.init_process_group(
-        backend="gloo", init_method="env://", world_size=n_gpus, rank=rank
-    )
+        dist.init_process_group(
+            backend="gloo" if sys.platform == "win32" or device.type != "cuda" else "nccl",
+            init_method="env://",
+            world_size=n_gpus if device.type == "cuda" else 1,
+            rank=rank if device.ty
     torch.manual_seed(hps.train.seed)
     if torch.cuda.is_available():
         torch.cuda.set_device(rank)
