@@ -110,7 +110,7 @@ def run(rank, n_gpus, hps):
         backend="gloo" if sys.platform == "win32" or device.type != "cuda" else "nccl",
         init_method="env://",
         world_size=n_gpus if device.type == "cuda" else 1,
-        rank=rank if if device.type == "cuda" else 0,
+        rank=rank if device.type == "cuda" else 0,
     ) 
     torch.manual_seed(hps.train.seed)
     if torch.cuda.is_available():
