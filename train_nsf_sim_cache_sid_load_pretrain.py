@@ -111,6 +111,7 @@ def run(rank, n_gpus, hps):
         init_method="env://",
         world_size=n_gpus if device.type == "cuda" else 1,
         rank=rank if device.ty
+    ) 
     torch.manual_seed(hps.train.seed)
     if torch.cuda.is_available():
         torch.cuda.set_device(rank)
