@@ -16,6 +16,7 @@ from random import shuffle, randint
 import torch
 logging.basicConfig(level=logging.WARNING)
 warnings.filterwarnings("ignore")
+logging.getLogger().setLevel(logging.ERROR)
 torch.backends.cudnn.deterministic = False
 torch.backends.cudnn.benchmark = True
 from torch.nn import functional as F
