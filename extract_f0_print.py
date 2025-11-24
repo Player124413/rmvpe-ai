@@ -34,46 +34,46 @@ class FeatureInput(object):
         self.f0_mel_min = 1127 * np.log(1 + self.f0_min / 700)
         self.f0_mel_max = 1127 * np.log(1 + self.f0_max / 700)
 
-    def compute_f0(self, path, f0_method):
-        x = load_audio(path, self.fs)
-        p_len = x.shape[0] // self.hop
-        if f0_method == "pm":
-            time_step = 160 / 16000 * 1000
-            f0_min = 50
-            f0_max = 1100
-            f0 = (
-                parselmouth.Sound(x, self.fs)
-                .to_pitch_ac(
-                    time_step=time_step / 1000,
-                    voicing_threshold=0.6,
-                    pitch_floor=f0_min,
-                    pitch_ceiling=f0_max,
-                )
-                .selected_array["frequency"]
+def compute_f0(self, path, f0_method):
+    x = load_audio(path, self.fs)
+    p_len = x.shape[0] // self.hop
+    if f0_method == "pm":
+        time_step = 160 / 16000 * 1000
+        f0_min = 50
+        f0_max = 1100
+        f0 = (
+            parselmouth.Sound(x, self.fs)
+            .to_pitch_ac(
+                time_step=time_step / 1000,
+                voicing_threshold=0.6,
+                pitch_floor=f0_min,
+                pitch_ceiling=f0_max,
             )
-            pad_size = (p_len - len(f0) + 1) // 2
-            if pad_size > 0 or p_len - len(f0) - pad_size > 0:
-                f0 = np.pad(
-                    f0, [[pad_size, p_len - len(f0) - pad_size]], mode="constant"
-                )
-        elif f0_method == "harvest":
-            f0, t = pyworld.harvest(
-                x.astype(np.double),
-                fs=self.fs,
-                f0_ceil=self.f0_max,
-                f0_floor=self.f0_min,
-                frame_period=1000 * self.hop / self.fs,
+            .selected_array["frequency"]
+        )
+        pad_size = (p_len - len(f0) + 1) // 2
+        if pad_size > 0 or p_len - len(f0) - pad_size > 0:
+            f0 = np.pad(
+                f0, [[pad_size, p_len - len(f0) - pad_size]], mode="constant"
             )
-            f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.fs)
-        elif f0_method == "dio":
-            f0, t = pyworld.dio(
-                x.astype(np.double),
-                fs=self.fs,
-                f0_ceil=self.f0_max,
-                f0_floor=self.f0_min,
-                frame_period=1000 * self.hop / self.fs,
-            )
-            f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.fs)
+    elif f0_method == "harvest":
+        f0, t = pyworld.harvest(
+            x.astype(np.double),
+            fs=self.fs,
+            f0_ceil=self.f0_max,
+            f0_floor=self.f0_min,
+            frame_period=1000 * self.hop / self.fs,
+        )
+        f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.fs)
+    elif f0_method == "dio":
+        f0, t = pyworld.dio(
+            x.astype(np.double),
+            fs=self.fs,
+            f0_ceil=self.f0_max,
+            f0_floor=self.f0_min,
+            frame_period=1000 * self.hop / self.fs,
+        )
+        f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.fs)
     elif f0_method == "rmvpe":
         if hasattr(self, "model_rmvpe") == False:
             from lib.rmvpe import RMVPE
