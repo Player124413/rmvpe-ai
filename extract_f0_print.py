@@ -34,62 +34,61 @@ class FeatureInput(object):
         self.f0_mel_min = 1127 * np.log(1 + self.f0_min / 700)
         self.f0_mel_max = 1127 * np.log(1 + self.f0_max / 700)
 
-def compute_f0(self, path, f0_method):
-    x = load_audio(path, self.fs)
-    p_len = x.shape[0] // self.hop
-    if f0_method == "pm":
-        time_step = 160 / 16000 * 1000
-        f0_min = 50
-        f0_max = 1100
-        f0 = (
-            parselmouth.Sound(x, self.fs)
-            .to_pitch_ac(
-                time_step=time_step / 1000,
-                voicing_threshold=0.6,
-                pitch_floor=f0_min,
-                pitch_ceiling=f0_max,
+    def compute_f0(self, path, f0_method):
+        x = load_audio(path, self.fs)
+        p_len = x.shape[0] // self.hop
+        if f0_method == "pm":
+            time_step = 160 / 16000 * 1000
+            f0_min = 50
+            f0_max = 1100
+            f0 = (
+                parselmouth.Sound(x, self.fs)
+                .to_pitch_ac(
+                    time_step=time_step / 1000,
+                    voicing_threshold=0.6,
+                    pitch_floor=f0_min,
+                    pitch_ceiling=f0_max,
+                )
+                .selected_array["frequency"]
             )
-            .selected_array["frequency"]
-        )
-        pad_size = (p_len - len(f0) + 1) // 2
-        if pad_size > 0 or p_len - len(f0) - pad_size > 0:
-            f0 = np.pad(
-                f0, [[pad_size, p_len - len(f0) - pad_size]], mode="constant"
+            pad_size = (p_len - len(f0) + 1) // 2
+            if pad_size > 0 or p_len - len(f0) - pad_size > 0:
+                f0 = np.pad(
+                    f0, [[pad_size, p_len - len(f0) - pad_size]], mode="constant"
+                )
+        elif f0_method == "harvest":
+            f0, t = pyworld.harvest(
+                x.astype(np.double),
+                fs=self.fs,
+                f0_ceil=self.f0_max,
+                f0_floor=self.f0_min,
+                frame_period=1000 * self.hop / self.fs,
             )
-    elif f0_method == "harvest":
-        f0, t = pyworld.harvest(
-            x.astype(np.double),
-            fs=self.fs,
-            f0_ceil=self.f0_max,
-            f0_floor=self.f0_min,
-            frame_period=1000 * self.hop / self.fs,
-        )
-        f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.fs)
-    elif f0_method == "dio":
-        f0, t = pyworld.dio(
-            x.astype(np.double),
-            fs=self.fs,
-            f0_ceil=self.f0_max,
-            f0_floor=self.f0_min,
-            frame_period=1000 * self.hop / self.fs,
-        )
-        f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.fs)
-    elif f0_method == "rmvpe":
-        if hasattr(self, "model_rmvpe") == False:
-            from lib.rmvpe import RMVPE
+            f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.fs)
+        elif f0_method == "dio":
+            f0, t = pyworld.dio(
+                x.astype(np.double),
+                fs=self.fs,
+                f0_ceil=self.f0_max,
+                f0_floor=self.f0_min,
+                frame_period=1000 * self.hop / self.fs,
+            )
+            f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.fs)
+        elif f0_method == "rmvpe":
+            if hasattr(self, "model_rmvpe") == False:
+                from lib.rmvpe import RMVPE
 
-            print("loading rmvpe model")
-            self.model_rmvpe = RMVPE("rmvpe.pt", is_half=False, device="cuda")
-        f0 = self.model_rmvpe.infer_from_audio(x, thred=0.03)
-    elif f0_method == "rmvpe_remake_exp":
-        if hasattr(self, "model_rmvpe") == False:
-            from lib.rmvpe import RMVPE
+                print("loading rmvpe model")
+                self.model_rmvpe = RMVPE("rmvpe.pt", is_half=False, device="cuda")
+            f0 = self.model_rmvpe.infer_from_audio(x, thred=0.03)
+        elif f0_method == "rmvpe_remake_exp":
+            if hasattr(self, "model_rmvpe") == False:
+                from lib.rmvpe import RMVPE
 
-            print("loading rmvpeV3 model")
-            self.model_rmvpe = RMVPE("rmvpeV3.pt", is_half=False, device="cuda")
-        f0 = self.model_rmvpe.infer_from_audio(x, thred=0.02)
-    
-    return f0
+                print("loading rmvpeV3 model")
+                self.model_rmvpe = RMVPE("rmvpeV3.pt", is_half=False, device="cuda")
+            f0 = self.model_rmvpe.infer_from_audio(x, thred=0.02)
+        return f0
 
     def coarse_f0(self, f0):
         f0_mel = 1127 * np.log(1 + f0 / 700)
@@ -170,5 +169,6 @@ if __name__ == "__main__":
         )
         ps.append(p)
         p.start()
-    for i in range(n_p):
-        ps[i].join()
+
+    for p in ps:
+        p.join()
