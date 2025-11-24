@@ -16,7 +16,6 @@ from random import shuffle, randint
 import torch
 logging.basicConfig(level=logging.WARNING)
 warnings.filterwarnings("ignore")
-logging.getLogger().setLevel(logging.ERROR)
 torch.backends.cudnn.deterministic = False
 torch.backends.cudnn.benchmark = True
 from torch.nn import functional as F
@@ -105,12 +104,9 @@ def run(rank, n_gpus, hps):
         # utils.check_git_hash(hps.model_dir)
         writer = SummaryWriter(log_dir=hps.model_dir)
         writer_eval = SummaryWriter(log_dir=os.path.join(hps.model_dir, "eval"))   
-        dist.init_process_group(
-            backend='nccl' if torch.cuda.is_available() else 'gloo',
-            init_method='env://',
-            world_size=1,
-            rank=0
-        )
+    dist.init_process_group(
+        backend="gloo", init_method="env://", world_size=n_gpus, rank=rank
+    )    
     torch.manual_seed(hps.train.seed)
     if torch.cuda.is_available():
         torch.cuda.set_device(rank)
