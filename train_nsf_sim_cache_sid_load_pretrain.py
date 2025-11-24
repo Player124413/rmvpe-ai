@@ -1,4 +1,6 @@
 import os, sys
+import logging
+import warnings
 
 now_dir = os.getcwd()
 sys.path.append(os.path.join(now_dir))
@@ -12,7 +14,8 @@ n_gpus = len(hps.gpus.split("-"))
 from random import shuffle, randint
 
 import torch
-
+logging.basicConfig(level=logging.WARNING)
+warnings.filterwarnings("ignore")
 torch.backends.cudnn.deterministic = False
 torch.backends.cudnn.benchmark = True
 from torch.nn import functional as F
