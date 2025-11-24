@@ -74,22 +74,22 @@ class FeatureInput(object):
                 frame_period=1000 * self.hop / self.fs,
             )
             f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.fs)
-        elif f0_method == "rmvpe":
-            if hasattr(self, "model_rmvpe") == False:
-                from lib.rmvpe import RMVPE
+    elif f0_method == "rmvpe":
+        if hasattr(self, "model_rmvpe") == False:
+            from lib.rmvpe import RMVPE
 
-                print("loading rmvpe model")
-                self.model_rmvpe = RMVPE("rmvpe.pt", is_half=False, device="cuda")
-            f0 = self.model_rmvpe.infer_from_audio(x, thred=0.03)
-        return f0
-        elif f0_method == "rmvpe_remake_exp":
-            if hasattr(self, "model_rmvpe") == False:
-                from lib.rmvpe import RMVPE
+            print("loading rmvpe model")
+            self.model_rmvpe = RMVPE("rmvpe.pt", is_half=False, device="cuda")
+        f0 = self.model_rmvpe.infer_from_audio(x, thred=0.03)
+    elif f0_method == "rmvpe_remake_exp":
+        if hasattr(self, "model_rmvpe") == False:
+            from lib.rmvpe import RMVPE
 
-                print("loading rmvpeV3 model")
-                self.model_rmvpe = RMVPE("rmvpeV3.pt", is_half=False, device="cuda")
-            f0 = self.model_rmvpe.infer_from_audio(x, thred=0.02)
-        return f0
+            print("loading rmvpeV3 model")
+            self.model_rmvpe = RMVPE("rmvpeV3.pt", is_half=False, device="cuda")
+        f0 = self.model_rmvpe.infer_from_audio(x, thred=0.02)
+    
+    return f0
 
     def coarse_f0(self, f0):
         f0_mel = 1127 * np.log(1 + f0 / 700)
