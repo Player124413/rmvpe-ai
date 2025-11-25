@@ -52,44 +52,6 @@ def setup_configs(configs, sample_rate):
         run_command("mv /kaggle/working/rmvpe-ai/configs/32k_for_spin_v2.json /kaggle/working/rmvpe-ai/configs/32k_v2.json")
     return f"✓ Настроены конфиги: {configs}"
 
-def download_pretrain(pretrain_type, sample_rate, use_hifigan, use_other):
-    """Загрузка претрейнов"""
-    os.chdir("/kaggle/working/rmvpe-ai")
-    os.makedirs("pretrained_v2", exist_ok=True)
-    
-    log = []
-    
-    if use_hifigan:
-        hugg_pret = "https://huggingface.co/Politrees/RVC_resources/resolve/main/pretrained/v2"
-        pretrains = {
-            "Default": [(f"{sample_rate}/Default/f0D{sample_rate}.pth", f"f0D{sample_rate}.pth"), 
-                       (f"{sample_rate}/Default/f0G{sample_rate}.pth", f"f0G{sample_rate}.pth")],
-            "» Snowie v3": [(f"{sample_rate}/Snowie/D_SnowieV3.1_{sample_rate}.pth", f"f0D{sample_rate}.pth"), 
-                           (f"{sample_rate}/Snowie/G_SnowieV3.1_{sample_rate}.pth", f"f0G{sample_rate}.pth")],
-        }
-        
-        if pretrain_type in pretrains:
-            for f in pretrains[pretrain_type]:
-                run_command(f"aria2c --console-log-level=error -c -x 16 -s 16 -k 1M {hugg_pret}/{f[0]} -d /kaggle/working/rmvpe-ai/pretrained_v2 -o {f[1]}")
-            log.append(f"✓ Загружен HiFi-GAN претрейн: {pretrain_type}")
-    
-    if use_other:
-        other_pretrains_urls = {
-            "legacyCorev2.5_contentvec": [
-                ("https://huggingface.co/lyery/legacy-core-2.5/resolve/main/D_LSpeechV2.5.pth", "f0D32k.pth"),
-                ("https://huggingface.co/lyery/legacy-core-2.5/resolve/main/G_LSpeechV2.5.pth", "f0G32k.pth")
-            ],
-            "spinV2pretrain_hifigan": [
-                (f"https://huggingface.co/Aznamir/spin/resolve/main/spin-v2/f0D{sample_rate}_spin-v2.pth", f"f0D{sample_rate}.pth"),
-                (f"https://huggingface.co/Aznamir/spin/resolve/main/spin-v2/f0G{sample_rate}_spin-v2.pth", f"f0G{sample_rate}.pth")
-            ],
-        }
-        
-        # Добавляем остальные претрейны по аналогии
-        log.append(f"✓ Загружен другой претрейн")
-    
-    return "\n".join(log) if log else "Претрейны не выбраны"
-
 def upload_dataset(files, dataset_name):
     """Загрузка датасета"""
     os.chdir("/kaggle/working/rmvpe-ai")
@@ -354,3 +316,4 @@ with gr.Blocks(title="RVC Training WebUI", theme=gr.themes.Soft()) as demo:
 if __name__ == "__main__":
 
     demo.launch(share=True, server_name="0.0.0.0", server_port=7860)
+
