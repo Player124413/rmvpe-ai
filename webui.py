@@ -26,68 +26,6 @@ def run_command(cmd, capture_output=True):
     except Exception as e:
         return f"Ошибка: {str(e)}"
 
-def install_dependencies(progress=gr.Progress()):
-    """Установка зависимостей"""
-    progress(0, desc="Обновление системы...")
-    
-    commands = [
-        ("Обновление apt", "sudo apt-get update"),
-        ("Установка Python 3.10", "sudo apt-get install -y python3.10"),
-        ("Установка pip", "curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && python3.10 get-pip.py"),
-        ("Установка uv", "pip install --no-cache-dir -q uv"),
-        ("Установка protobuf", "uv pip install --no-cache-dir -q protobuf==3.20.3"),
-        ("Установка setuptools", "uv pip install --no-cache-dir -q setuptools==57.5.0"),
-        ("Установка aiohttp", "uv pip install --no-cache-dir -q aiohttp"),
-        ("Установка wheel", "uv pip install --no-cache-dir -q wheel"),
-        ("Установка ML библиотек", "uv pip install --no-cache-dir -q faiss-cpu==1.7.2 fairseq ffmpeg-python praat-parselmouth pyworld numpy==1.23.5 numba==0.56.4 librosa==0.9.2"),
-        ("Установка PyTorch", "uv pip install --no-cache-dir -q torch torchvision torchaudio"),
-        ("Клонирование репозитория", "git clone https://github.com/Player124413/rmvpe-ai -b exp /kaggle/working/rmvpe-ai || true"),
-        ("Установка aria2", "apt-get -y install -qq aria2 || apt-get install --fix-missing"),
-    ]
-    
-    log = []
-    for i, (desc, cmd) in enumerate(commands):
-        progress((i + 1) / len(commands), desc=desc)
-        result = run_command(cmd)
-        log.append(f"✓ {desc}")
-    
-    return "\n".join(log)
-
-def install_ml_requirements(machine_learning):
-    """Установка требований для машинного обучения"""
-    os.chdir("/kaggle/working/rmvpe-ai")
-    if machine_learning == "transformers":
-        run_command("uv pip install --no-cache-dir -q -r requirements-transformers.txt")
-    else:
-        run_command("uv pip install --no-cache-dir -q -r requirements.txt")
-    return f"✓ Установлены требования для {machine_learning}"
-
-def download_hubert(hubert_type):
-    """Загрузка Hubert модели"""
-    os.chdir("/kaggle/working/rmvpe-ai")
-    os.makedirs("Hubert", exist_ok=True)
-    
-    if hubert_type == "contentvec-fairseq":
-        run_command("aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://bit.ly/4mmal7O -d /kaggle/working/rmvpe-ai/Hubert -o hubert_base.pt")
-    elif hubert_type == "contentvec-transformers":
-        run_command("aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://bit.ly/4mqQqVn -d /kaggle/working/rmvpe-ai/Hubert -o pytorch_model.bin")
-        run_command("aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://bit.ly/3H7dRTq -d /kaggle/working/rmvpe-ai/Hubert -o config.json")
-    elif hubert_type == "spin7-12-transformers":
-        run_command("aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://bit.ly/4jccjoz -d /kaggle/working/rmvpe-ai/Hubert -o pytorch_model.bin")
-        run_command("aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://bit.ly/436wyzh -d /kaggle/working/rmvpe-ai/Hubert -o config.json")
-    elif hubert_type == "spinV2-transformers":
-        run_command("aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/spin-v2/pytorch_model.bin -d /kaggle/working/rmvpe-ai/Hubert -o pytorch_model.bin")
-        run_command("aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/spin-v2/config.json -d /kaggle/working/rmvpe-ai/Hubert -o config.json")
-    
-    return f"✓ Загружен Hubert: {hubert_type}"
-
-def download_rmvpe():
-    """Загрузка RMVPE моделей"""
-    os.chdir("/kaggle/working/rmvpe-ai")
-    run_command("aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://bit.ly/47Yxi9Y -d /kaggle/working/rmvpe-ai -o rmvpe.pt")
-    run_command("aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://huggingface.co/dr87/rmvpeV2/resolve/main/RMVPEV3_model_weights_298404.pt -d /kaggle/working/rmvpe-ai -o rmvpeV3.pt")
-    return "✓ Загружены RMVPE и RMVPE V3"
-
 def setup_mute_files(mute_file):
     """Настройка mute файлов"""
     os.chdir("/kaggle/working/rmvpe-ai")
@@ -276,11 +214,6 @@ with gr.Blocks(title="RVC Training WebUI", theme=gr.themes.Soft()) as demo:
             
             with gr.Row():
                 with gr.Column():
-                    machine_learning = gr.Dropdown(
-                        choices=["fairseq", "transformers"],
-                        value="fairseq",
-                        label="Машинное обучение"
-                    )
                     vocoder = gr.Dropdown(
                         choices=["Hifi-GAN", "RefineGAN"],
                         value="Hifi-GAN",
@@ -290,13 +223,6 @@ with gr.Blocks(title="RVC Training WebUI", theme=gr.themes.Soft()) as demo:
                         choices=["32k", "40k", "48k"],
                         value="32k",
                         label="Sample Rate"
-                    )
-                
-                with gr.Column():
-                    hubert = gr.Dropdown(
-                        choices=["contentvec-fairseq", "contentvec-transformers", "spin7-12-transformers", "spinV2-transformers"],
-                        value="contentvec-fairseq",
-                        label="Hubert модель"
                     )
                     mute_file = gr.Dropdown(
                         choices=["original", "spin_edition", "spinv2_edition"],
@@ -308,43 +234,6 @@ with gr.Blocks(title="RVC Training WebUI", theme=gr.themes.Soft()) as demo:
                         value="original_for_all_sample_rates",
                         label="Конфиги"
                     )
-            
-            with gr.Row():
-                with gr.Column():
-                    gr.Markdown("### Претрейны")
-                    use_hifigan = gr.Checkbox(label="Использовать HiFi-GAN претрейн", value=False)
-                    hifigan_pretrain = gr.Dropdown(
-                        choices=["Default", "» Snowie v3", "» RIN_E3 - 40k", "» Snowie - 40k", "» Snowie + RIN_E3 - 40k", "» Rigel - 32k", "» Snowie v2 - 40k/48k", "» Ov2Super - 40k", "» TITAN-Medium"],
-                        value="» Snowie v3",
-                        label="HiFi-GAN Претрейн"
-                    )
-                    use_other = gr.Checkbox(label="Использовать другой претрейн", value=True)
-                    other_pretrain = gr.Dropdown(
-                        choices=["legacyCorev2.5_contentvec", "spinV2pretrain_hifigan", "spin7-12_pretrain-hifigan", "refinegan_pretrain-contentvec", "VocalCore"],
-                        value="legacyCorev2.5_contentvec",
-                        label="Другой претрейн"
-                    )
-            
-            install_btn = gr.Button("🔧 Установить всё", variant="primary")
-            install_output = gr.Textbox(label="Лог установки", lines=10)
-            
-            def full_install(ml, voc, sr, hub, mute, conf, use_hifi, hifi_pre, use_oth, oth_pre):
-                logs = []
-                logs.append(install_dependencies())
-                logs.append(install_ml_requirements(ml))
-                logs.append(download_hubert(hub))
-                logs.append(download_rmvpe())
-                logs.append(setup_mute_files(mute))
-                logs.append(setup_configs(conf, sr))
-                logs.append(download_pretrain(hifi_pre, sr, use_hifi, use_oth))
-                return "\n\n".join(logs)
-            
-            install_btn.click(
-                full_install,
-                inputs=[machine_learning, vocoder, sample_rate, hubert, mute_file, configs, use_hifigan, hifigan_pretrain, use_other, other_pretrain],
-                outputs=install_output
-            )
-        
         # Вкладка датасета
         with gr.Tab("📁 Датасет"):
             gr.Markdown("### Загрузка и подготовка датасета")
@@ -463,4 +352,5 @@ with gr.Blocks(title="RVC Training WebUI", theme=gr.themes.Soft()) as demo:
 
 # Запуск приложения
 if __name__ == "__main__":
+
     demo.launch(share=True, server_name="0.0.0.0", server_port=7860)
