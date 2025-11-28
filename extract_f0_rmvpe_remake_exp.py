@@ -36,13 +36,13 @@ class FeatureInputPlus:
         self.f0_mel_min = 1127 * np.log(1 + self.f0_min / 700)
         self.f0_mel_max = 1127 * np.log(1 + self.f0_max / 700)
 
-        printt("Loading RMVPE model (rmvpe+ mode)")
-        self.model_rmvpe = RMVPE("rmvpe.pt", is_half=True, device="cuda")
+        printt("Loading RMVPEV3 model (rmvpe+ mode)")
+        self.model_rmvpe = RMVPE("rmvpev3.pt", is_half=True, device="cuda")
 
     def compute_f0(self, path):
         x = load_audio(path, self.fs)
         # Base RMVPE extraction
-        f0 = self.model_rmvpe.infer_from_audio(x, thred=0.03)
+        f0 = self.model_rmvpe.infer_from_audio(x, thred=0.02)
 
         # RMVPE+ enhancement: median filtering + interpolation
         f0_safe = f0.astype(np.float32)
