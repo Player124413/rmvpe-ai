@@ -57,35 +57,35 @@ class FeatureInput(object):
                     f0, [[pad_size, p_len - len(f0) - pad_size]], mode="constant"
                 )
         if f0_method == "harvest":
-           try:
-              x_double = x.astype(np.double)
+            try:
+                x_double = x.astype(np.double)
 
-              if len(x_double) < self.hop * 4:
-                 raise ValueError("Audio too short for f0 extraction")
-              x_double = np.ascontiguousarray(x_double)
-              if np.abs(x_double).max() > 0:
-                 x_double = x_double / np.abs(x_double).max() * 0.95
-                 
-              f0, t = pyworld.harvest(
-                  x_double,
-                  fs=self.fs,
-                  f0_ceil=float(self.f0_max),
-                  f0_floor=float(self.f0_min),
-                  frame_period=float(1000 * self.hop / self.fs),
-              )
-             f0 = np.nan_to_num(f0, nan=0.0, posinf=0.0, neginf=0.0)
+                if len(x_double) < self.hop * 4:
+                    raise ValueError("Audio too short for f0 extraction")
+                x_double = np.ascontiguousarray(x_double)
+                if np.abs(x_double).max() > 0:
+                    x_double = x_double / np.abs(x_double).max() * 0.95
+                    
+                f0, t = pyworld.harvest(
+                    x_double,
+                    fs=self.fs,
+                    f0_ceil=float(self.f0_max),
+                    f0_floor=float(self.f0_min),
+                    frame_period=float(1000 * self.hop / self.fs),
+                )
+                f0 = np.nan_to_num(f0, nan=0.0, posinf=0.0, neginf=0.0)
+                f0 = pyworld.stonemask(x_double, f0, t, self.fs)
+                f0 = np.nan_to_num(f0, nan=0.0, posinf=0.0, neginf=0.0)
+                f0 = np.clip(f0, 0, self.f0_max)
+                f0[f0 < self.f0_min] = 0
+            
+            except Exception as e:
+                print(f"Harvest f0 extraction failed: {e}")
+                target_length = int(np.ceil(len(x) / self.hop))
+                f0 = np.zeros(target_length, dtype=np.float64)
+                t = np.arange(target_length) * self.hop / self.fs
         
-     
-             f0 = pyworld.stonemask(x_double, f0, t, self.fs)
-             f0 = np.nan_to_num(f0, nan=0.0, posinf=0.0, neginf=0.0)
-             f0 = np.clip(f0, 0, self.f0_max)
-             f0[f0 < self.f0_min] = 0
-        
-        except Exception as e:
-            print(f"Harvest f0 extraction failed: {e}")
-            target_length = int(np.ceil(len(x) / self.hop))
-            f0 = np.zeros(target_length, dtype=np.float64)
-            t = np.arange(target_length) * self.hop / self.fs
+    
         elif f0_method == "dio":
             f0, t = pyworld.dio(
                 x.astype(np.double),
