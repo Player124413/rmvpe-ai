@@ -56,7 +56,7 @@ class FeatureInput(object):
                 f0 = np.pad(
                     f0, [[pad_size, p_len - len(f0) - pad_size]], mode="constant"
                 )
-        if f0_method == "harvest":
+        if f0_method == "harvest_fixed":
             try:
                 x_double = x.astype(np.double)
 
