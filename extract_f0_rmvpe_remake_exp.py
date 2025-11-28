@@ -37,7 +37,7 @@ class FeatureInputPlus:
         self.f0_mel_max = 1127 * np.log(1 + self.f0_max / 700)
 
         printt("Loading RMVPEV3 model (rmvpe+ mode)")
-        self.model_rmvpe = RMVPE("rmvpev3.pt", is_half=True, device="cuda")
+        self.model_rmvpe = RMVPE("rmvpev3.pt", is_half=False, device="cuda")
 
     def compute_f0(self, path):
         x = load_audio(path, self.fs)
