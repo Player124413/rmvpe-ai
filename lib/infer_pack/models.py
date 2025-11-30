@@ -1032,37 +1032,6 @@ class MultiPeriodDiscriminatorV2(torch.nn.Module):
 
         return y_d_rs, y_d_gs, fmap_rs, fmap_gs
 
-class MultiPeriodDiscriminatorV3(torch.nn.Module):
-    def __init__(self, use_spectral_norm=False):
-        super(MultiPeriodDiscriminatorV3, self).__init__()
-        # periods = [2, 3, 5, 7, 11, 17]
-        periods = [2, 3, 5, 7, 11]
-        resolutions = [[1024, 120, 600], [2048, 240, 1200], [512, 50, 240]]
-        discs = [DiscriminatorS(use_spectral_norm=use_spectral_norm)]
-        discs = discs + [
-            DiscriminatorP(i, use_spectral_norm=use_spectral_norm) for i in periods
-        ]
-        discs = discs + [
-            DiscriminatorR(i, use_spectral_norm=use_spectral_norm) for r in resolutions
-        ]
-        self.discriminators = nn.ModuleList(discs)
-
-    def forward(self, y, y_hat):
-        y_d_rs = []  #
-        y_d_gs = []
-        fmap_rs = []
-        fmap_gs = []
-        for i, d in enumerate(self.discriminators):
-            y_d_r, fmap_r = d(y)
-            y_d_g, fmap_g = d(y_hat)
-            # for j in range(len(fmap_r)):
-            #     print(i,j,y.shape,y_hat.shape,fmap_r[j].shape,fmap_g[j].shape)
-            y_d_rs.append(y_d_r)
-            y_d_gs.append(y_d_g)
-            fmap_rs.append(fmap_r)
-            fmap_gs.append(fmap_g)
-
-        return y_d_rs, y_d_gs, fmap_rs, fmap_gs
 class DiscriminatorS(torch.nn.Module):
     def __init__(self, use_spectral_norm=False):
         super(DiscriminatorS, self).__init__()
@@ -1170,52 +1139,3 @@ class DiscriminatorP(torch.nn.Module):
         x = torch.flatten(x, 1, -1)
 
         return x, fmap
-class DiscriminatorR(torch.nn.Module):
-    def __init__(self, resolution, use_spectral_norm=False):
-        super().__init__()
-
-        self.resolution = resolution
-        self.lrelu_slope = 0.1
-        norm_f = spectral_norm if use_spectral_norm else weight_norm
-
-        self.convs = torch.nn.ModuleList(
-            [
-                norm_f(torch.nn.Conv2d( 1, 32, (3, 9),                padding=(1, 4),)),
-                norm_f(torch.nn.Conv2d(32, 32, (3, 9), stride=(1, 2), padding=(1, 4),)),
-                norm_f(torch.nn.Conv2d(32, 32, (3, 9), stride=(1, 2), padding=(1, 4),)),
-                norm_f(torch.nn.Conv2d(32, 32, (3, 9), stride=(1, 2), padding=(1, 4),)),
-                norm_f(torch.nn.Conv2d(32, 32, (3, 3),                padding=(1, 1),)),
-            ]
-        )
-        self.conv_post = norm_f(torch.nn.Conv2d(32, 1, (3, 3), padding=(1, 1)))
-
-    def forward(self, x):
-        fmap = []
-
-        x = self.spectrogram(x).unsqueeze(1)
-        
-        for layer in self.convs:
-            x = F.leaky_relu(layer(x), self.lrelu_slope)
-            fmap.append(x)
-        x = self.conv_post(x)
-        fmap.append(x)
-
-        return torch.flatten(x, 1, -1), fmap
-
-    def spectrogram(self, x):
-        n_fft, hop_length, win_length = self.resolution
-        pad = int((n_fft - hop_length) / 2)
-        x = F.pad(x, (pad, pad), mode="reflect",).squeeze(1)
-        x = torch.stft(
-            x,
-            n_fft=n_fft,
-            hop_length=hop_length,
-            win_length=win_length,
-            window=torch.ones(win_length, device=x.device), 
-            center=False,
-            return_complex=True,
-        )
-
-        mag = torch.norm(torch.view_as_real(x), p=2, dim=-1)  # [B, F, TT]
-
-        return mag
