@@ -1043,7 +1043,7 @@ class MultiPeriodDiscriminatorV3(torch.nn.Module):
             DiscriminatorP(i, use_spectral_norm=use_spectral_norm) for i in periods
         ]
         discs = discs + [
-            DiscriminatorR(i, use_spectral_norm=use_spectral_norm) for r in resolutions
+            DiscriminatorR(r, use_spectral_norm=use_spectral_norm) for r in resolutions
         ]
         self.discriminators = nn.ModuleList(discs)
 
