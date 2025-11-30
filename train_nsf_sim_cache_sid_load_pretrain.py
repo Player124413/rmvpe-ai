@@ -43,7 +43,7 @@ else:
     from lib.infer_pack.models import (
         SynthesizerTrnMs768NSFsid as RVC_Model_f0,
         SynthesizerTrnMs768NSFsid_nono as RVC_Model_nof0,
-        MultiPeriodDiscriminatorV2 as MultiPeriodDiscriminator,
+        MultiPeriodDiscriminatorV3 as MultiPeriodDiscriminator,
     )
 from lib.train.losses import generator_loss, discriminator_loss, feature_loss, kl_loss
 from lib.train.mel_processing import mel_spectrogram_torch, spec_to_mel_torch
