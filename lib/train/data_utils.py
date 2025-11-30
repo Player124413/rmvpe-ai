@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import torch.utils.data
 
-from lib.train.mel_processing import spectrogram_torch
+from lib.train.mel_processing import spectrogram_torch, MultiScaleMelSpectrogramLoss
 from lib.train.utils import load_wav_to_torch, load_filepaths_and_text
 
 
