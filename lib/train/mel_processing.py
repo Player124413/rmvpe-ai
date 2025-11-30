@@ -132,13 +132,13 @@ class MultiScaleMelSpectrogramLoss(torch.nn.Module):
 
     def __init__(
         self,
-        sample_rate: int = 24000,
+        sampling_rate: int = 24000,
         n_mels: list[int] = [5, 10, 20, 40, 80, 160, 320],  # , 480],
         window_lengths: list[int] = [32, 64, 128, 256, 512, 1024, 2048],  # , 4096],
         loss_fn=torch.nn.L1Loss(),
     ):
         super().__init__()
-        self.sample_rate = sample_rate
+        self.sampling_rate = sampling_rate
         self.loss_fn = loss_fn
         self.log_base = torch.log(torch.tensor(10.0))
         self.stft_params: list[tuple] = []
